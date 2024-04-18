@@ -4,7 +4,7 @@ from tryondiffusion import TryOnImagen, get_unet_by_name
 
 IMAGE_SIZE_BASE = (128, 128)
 IMAGE_SIZE_SR = (256, 256)
-BATCH_SIZE = 2
+BATCH_SIZE = 128
 TRAIN_UNET_NUMBER = 2
 TIMESTEPS = (2, 2)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -64,7 +64,7 @@ def main():
     print(f"loss: {loss}")
     print("Attempting to backpropagate...")
     loss.backward()
-    print("Backpropagation successful!")
+    #print("Backpropagation successful!")
 
     print("Starting sampling loop...")
     images = imagen.sample(
@@ -80,7 +80,7 @@ def main():
         use_tqdm=True,
         use_one_unet_in_gpu=True,
     )
-    images[0].show()  # or save images[0].save("output.png")
+    images[0].save("output.png")  # or save images[0].save("output.png")
 
 
 if __name__ == "__main__":
