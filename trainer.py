@@ -6,7 +6,7 @@ from tryondiffusion import TryOnImagen, TryOnImagenTrainer, get_unet_by_name
 TRAIN_UNET_NUMBER = 1
 BASE_UNET_IMAGE_SIZE = (64, 64)
 # SR_UNET_IMAGE_SIZE = (64, 64)
-BATCH_SIZE = 64
+BATCH_SIZE = 2
 GRADIENT_ACCUMULATION_STEPS = 2
 NUM_ITERATIONS = 10000
 TIMESTEPS = (2)
@@ -32,8 +32,8 @@ class SyntheticTryonDataset(Dataset):
         person_image = torch.randn(3, *self.image_size)
         ca_image = torch.randn(3, *self.image_size)
         garment_image = torch.randn(3, *self.image_size)
-        person_pose = torch.randn(*self.pose_size)
-        garment_pose = torch.randn(*self.pose_size)
+        person_pose = torch.randn(*(18, 2))
+        garment_pose = torch.randn(*(18, 2))
 
         sample = {
             "person_images": person_image,
@@ -98,8 +98,8 @@ def main():
         accelerate_cpu=False,
         accelerate_gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
         device="cuda",
-        checkpoint_path="/scratch/network/dg9272/cos485/checkpoints",
-        checkpoint_every=500
+        # checkpoint_path="/scratch/network/dg9272/cos485/checkpoints",
+        # checkpoint_every=500
     )
 
     trainer.add_train_dataloader(train_dataloader)

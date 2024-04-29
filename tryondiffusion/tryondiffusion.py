@@ -11,7 +11,8 @@ from einops.layers.torch import Rearrange
 from torch import nn
 from torch.nn.parallel import DistributedDataParallel
 from tqdm.auto import tqdm
-
+person_pose_num = 18
+garment_pose_num = 18
 from tryondiffusion.common.python_helpers import (
     cast_tuple,
     default,
@@ -122,7 +123,7 @@ class ParallelUNet(nn.Module):
         pose_num_latents_mean_pooled: int = 4,
         pose_attn_heads: int = 8,
         pose_attn_dim_head: int = 64,
-        max_keypoints_len: int = 18,
+        max_keypoints_len: int = 30,
         lowres_cond: bool = False,  # for cascading diffusion - https://cascaded-diffusion.github.io/
         layer_attns: Union[bool, Tuple[bool]] = (False, False, True, True),
         layer_cross_attns: Union[bool, Tuple[bool]] = (False, False, True, True),
@@ -227,11 +228,21 @@ class ParallelUNet(nn.Module):
                     depth=pose_depth,
                     dim_head=pose_attn_dim_head,
                     heads=pose_attn_heads,
-                    num_latents=pose_num_latents,
+                    num_latents=person_pose_num,
+                    num_latents_mean_pooled=pose_num_latents_mean_pooled,
+                    max_seq_len=max_keypoints_len,
+                ),
+                PerceiverResampler(
+                    dim=context_dim,
+                    depth=pose_depth,
+                    dim_head=pose_attn_dim_head,
+                    heads=pose_attn_heads,
+                    num_latents=garment_pose_num,
                     num_latents_mean_pooled=pose_num_latents_mean_pooled,
                     max_seq_len=max_keypoints_len,
                 )
-                for _ in range(2)
+                
+                # for _ in range(2)
             ]
         )
 
@@ -255,8 +266,9 @@ class ParallelUNet(nn.Module):
         self.null_pose_hidden = nn.ParameterList([nn.Parameter(torch.randn(1, time_cond_dim)) for _ in range(2)])
         self.null_pose_tokens = nn.ParameterList(
             [
-                nn.Parameter(torch.randn(1, pose_num_latents + pose_num_latents_mean_pooled, context_dim))
-                for _ in range(2)
+                nn.Parameter(torch.randn(1, person_pose_num + pose_num_latents_mean_pooled, context_dim)),
+                nn.Parameter(torch.randn(1, garment_pose_num + pose_num_latents_mean_pooled, context_dim))
+                # for _ in range(2)
             ]
         )
 
@@ -694,7 +706,7 @@ class TryOnImagen(nn.Module):
         cond_drop_prob=0.1,
         loss_type="l2",
         noise_schedules="cosine",
-        pred_objectives: Literal["x_start", "noise", "v"] = ("noise", "noise"),
+        pred_objectives: Literal["x_start", "noise", "v"] = ("noise"),
         aug_noise_schedule="linear",
         aug_sample_noise_level=0.2,  # in the paper, they present a new trick where they noise the lowres conditioning image, and at sample time, fix it to a certain level (0.1 or 0.3) - the unets are also made to be conditioned on this noise level
         per_sample_random_aug_noise_level=False,  # unclear when conditioning on augmentation noise level, whether each batch element receives a random aug noise value - turning off due to @marunine's find
@@ -753,7 +765,7 @@ class TryOnImagen(nn.Module):
         self.aug_noise_schedule = GaussianDiffusionContinuousTimes(noise_schedule=aug_noise_schedule)
 
         # ddpm objectives - predicting noise by default
-
+        # print(pred_objectives)
         self.pred_objectives = cast_tuple(pred_objectives, num_unets)
 
         # construct unets
@@ -778,6 +790,7 @@ class TryOnImagen(nn.Module):
         # unet image sizes
         self.image_sizes = image_sizes
 
+        print(self.image_sizes)
         assert num_unets == len(
             image_sizes
         ), f"you did not supply the correct number of u-nets ({len(unets)}) for resolutions {image_sizes}"

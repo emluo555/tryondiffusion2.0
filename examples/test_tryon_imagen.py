@@ -2,11 +2,11 @@ import torch
 
 from tryondiffusion import TryOnImagen, get_unet_by_name
 
-IMAGE_SIZE_BASE = (128, 128)
-IMAGE_SIZE_SR = (256, 256)
-BATCH_SIZE = 128
-TRAIN_UNET_NUMBER = 2
-TIMESTEPS = (2, 2)
+IMAGE_SIZE_BASE = (64, 64)
+IMAGE_SIZE_SR = (64, 64)
+BATCH_SIZE = 64
+TRAIN_UNET_NUMBER = 1
+TIMESTEPS = (2)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -14,12 +14,12 @@ def main():
     # instantiate the U-Nets
     print("Instantiating U-Nets...")
     unet1 = get_unet_by_name("base")
-    unet2 = get_unet_by_name("sr")
+    # unet2 = get_unet_by_name("sr")
 
     # prepare input images
-    person_images = torch.randn(BATCH_SIZE, 3, *IMAGE_SIZE_SR)
-    ca_images = torch.randn(BATCH_SIZE, 3, *IMAGE_SIZE_SR)
-    garment_images = torch.randn(BATCH_SIZE, 3, *IMAGE_SIZE_SR)
+    person_images = torch.randn(BATCH_SIZE, 3, *IMAGE_SIZE_BASE)
+    ca_images = torch.randn(BATCH_SIZE, 3, *IMAGE_SIZE_BASE)
+    garment_images = torch.randn(BATCH_SIZE, 3, *IMAGE_SIZE_BASE)
 
     # prepare input poses
     person_pose = torch.randn(
@@ -42,10 +42,9 @@ def main():
     garment_pose = garment_pose.to(DEVICE)
 
     # instantiate the Imagen model
-
     imagen = TryOnImagen(
-        unets=(unet1, unet2),
-        image_sizes=(IMAGE_SIZE_BASE, IMAGE_SIZE_SR),
+        unets=(unet1),
+        image_sizes= (IMAGE_SIZE_BASE, ),
         timesteps=TIMESTEPS,
     )
     imagen = imagen.to(DEVICE)
@@ -64,7 +63,7 @@ def main():
     print(f"loss: {loss}")
     print("Attempting to backpropagate...")
     loss.backward()
-    #print("Backpropagation successful!")
+    print("Backpropagation successful!")
 
     print("Starting sampling loop...")
     images = imagen.sample(

@@ -3,8 +3,9 @@
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
 #SBATCH --cpus-per-task=1        # cpu-cores per task (>1 if multi-threaded tasks)
-
-#SBATCH --partition=mig
+#SBATCH --gres=gpu:1
+#SBATCH --mem=32G
+#SBATCH --constraint=a100
 #SBATCH --time=00:30:00          # total run time limit (HH:MM:SS)
 #SBATCH --mail-type=begin        # send email when job begins
 #SBATCH --mail-type=end          # send email when job ends
@@ -14,4 +15,4 @@
 module purge
 module load anaconda3/2024.2
 conda activate cos485
-python3 ./examples/test_tryon_imagen.py
+python3 trainer.py
