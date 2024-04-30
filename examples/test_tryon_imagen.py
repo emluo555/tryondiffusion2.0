@@ -3,10 +3,10 @@ import torch
 from tryondiffusion import TryOnImagen, get_unet_by_name
 
 IMAGE_SIZE_BASE = (64, 64)
-IMAGE_SIZE_SR = (64, 64)
+# IMAGE_SIZE_SR = (64, 64)
 BATCH_SIZE = 64
 TRAIN_UNET_NUMBER = 1
-TIMESTEPS = (2)
+TIMESTEPS = (256)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -46,6 +46,7 @@ def main():
         unets=(unet1),
         image_sizes= (IMAGE_SIZE_BASE, ),
         timesteps=TIMESTEPS,
+        
     )
     imagen = imagen.to(DEVICE)
 

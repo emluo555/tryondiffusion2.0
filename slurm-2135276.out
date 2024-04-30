@@ -2,4 +2,4 @@
 dataloader_config = DataLoaderConfiguration(split_batches=False)
   warnings.warn(
 Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
-slurmstepd: error: *** JOB 2087824 ON adroit-h11g2 CANCELLED AT 2024-04-25T05:15:48 ***
+slurmstepd: error: *** JOB 2135276 ON adroit-h11g1 CANCELLED AT 2024-04-30T00:35:34 ***

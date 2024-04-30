@@ -12,11 +12,11 @@ from torchvision.utils import save_image
 import json
 
 TRAIN_UNET_NUMBER = 1
-BASE_UNET_IMAGE_SIZE = (128, 128) 
+BASE_UNET_IMAGE_SIZE = (96, 96) 
 # SR_UNET_IMAGE_SIZE = (64, 64)
-BATCH_SIZE = 20
-GRADIENT_ACCUMULATION_STEPS = 4
-NUM_ITERATIONS = 50000
+BATCH_SIZE = 1
+GRADIENT_ACCUMULATION_STEPS = 2
+NUM_ITERATIONS = 20000
 TIMESTEPS = (256)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -58,14 +58,14 @@ class SyntheticTryonDataset(Dataset):
         # print(person_pose)
         f.close()
         
-        # garment_pose = torch.randn(*(1, 2))
+        garment_pose = torch.randn(*(1, 2))
 
         sample = {
             "person_images": person_image,
             "ca_images": ca_image,
             "garment_images": garment_image,
             "person_poses": person_pose,
-            # "garment_poses": garment_pose,
+            "garment_poses": garment_pose,
         }
 
         return sample
@@ -77,12 +77,11 @@ def tryondiffusion_collate_fn(batch):
         "ca_images": torch.stack([item["ca_images"] for item in batch]),
         "garment_images": torch.stack([item["garment_images"] for item in batch]),
         "person_poses": torch.stack([item["person_poses"] for item in batch]),
-        # "garment_poses": torch.stack([item["garment_poses"] for item in batch]),
+        "garment_poses": torch.stack([item["garment_poses"] for item in batch]),
     }
 
 
 def main():
-    
     print("Instantiating the dataset and dataloader...")
     dataset = SyntheticTryonDataset(image_size=BASE_UNET_IMAGE_SIZE if TRAIN_UNET_NUMBER == 2 else BASE_UNET_IMAGE_SIZE
     )
@@ -113,7 +112,6 @@ def main():
         image_sizes=(BASE_UNET_IMAGE_SIZE, ),
         timesteps=TIMESTEPS,
     )
-
     print("Instantiating the trainer...")
     trainer = TryOnImagenTrainer(
         imagen=imagen,
@@ -121,25 +119,19 @@ def main():
         accelerate_cpu=False,
         accelerate_gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
         device="cuda",
-        checkpoint_path="/scratch/network/dg9272/cos485/checkpoints/checks4",
+        checkpoint_path="/scratch/network/dg9272/cos485/checkpoints/",
         checkpoint_every=100,
         lr=1e-6
     )
 
+    print("Starting sampling loop...")
     trainer.add_train_dataloader(train_dataloader)
     trainer.add_valid_dataloader(validation_dataloader)
-    print("Starting training loop...")
-    # training loop
-    for i in range(NUM_ITERATIONS):
-        # TRAINING
-        trainer.train_step(unet_number=TRAIN_UNET_NUMBER)
-        # if (i % NUM_ITERATIONS == 0):
-        #     trainer.valid_step(unet_number=TRAIN_UNET_NUMBER)
-
-    # SAMPLING
-    print("Starting sampling loop...")
-    validation_sample = next(trainer.valid_dl_iter)
-    _ = validation_sample.pop("person_images")
+    validation_sample = next(iter(validation_dataloader))
+    save_image(validation_sample['person_images'], 'person.jpg')
+    save_image(validation_sample['ca_images'], 'ca.jpg')
+    save_image(validation_sample['garment_images'], 'garment.jpg')
+    del validation_sample['person_images']
     imagen_sample_kwargs = dict(
         **validation_sample,
         batch_size=BATCH_SIZE,
@@ -150,13 +142,14 @@ def main():
         use_tqdm=True,
         use_one_unet_in_gpu=True,
     )
+
     images = trainer.sample(**imagen_sample_kwargs)  # returns List[Image]
     # assert len(images) == 2
     # assert len(images[0]) == BATCH_SIZE and len(images[1]) == BATCH_SIZE
 
     for unet_output in images:
         for image in unet_output:
-            image.save("output.png") 
+            image.save("10000.png") 
 
 
 if __name__ == "__main__":

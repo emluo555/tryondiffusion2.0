@@ -109,11 +109,14 @@ class TryOnImagenTrainer(nn.Module):
         checkpoint_every=None,
         checkpoint_fs=None,
         fs_kwargs: dict = None,
-        max_checkpoints_keep=3,
+        max_checkpoints_keep=2,
         project_name: Optional[str] = None,
         **kwargs,
     ):
         super().__init__()
+        self.logger = open("logger5.csv", "a")
+        self.loss = 0
+        self.valid_loss = 0
 
         # save config
         init_args = locals()
@@ -479,7 +482,9 @@ class TryOnImagenTrainer(nn.Module):
         self.create_train_iter()
 
         kwargs = {"unet_number": unet_number, **kwargs}
+        # self.train_dl_iter = train_dl_iter
         loss = self.step_with_dl_iter(self.train_dl_iter, **kwargs)
+        self.loss = loss
         self.update(unet_number=unet_number)
         return loss
 
@@ -492,6 +497,7 @@ class TryOnImagenTrainer(nn.Module):
         context = self.use_ema_unets if kwargs.pop("use_ema_unets", False) else nullcontext
         with context():
             loss = self.step_with_dl_iter(self.valid_dl_iter, **kwargs)
+        self.valid_loss = loss
         return loss
 
     def step_with_dl_iter(self, dl_iter, **kwargs):
@@ -532,7 +538,9 @@ class TryOnImagenTrainer(nn.Module):
 
         if not self.can_checkpoint:
             return
-
+        self.valid_step(unet_number=1)
+        self.logger.write(f"{self.loss},{self.valid_loss}\n")
+        self.logger.flush()
         total_steps = int(self.steps.sum().item())
         filepath = os.path.join(self.checkpoint_path, f"checkpoint.{total_steps}.pt")
 
