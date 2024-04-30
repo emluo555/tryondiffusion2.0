@@ -4,10 +4,10 @@ dataloader_config = DataLoaderConfiguration(split_batches=False)
 Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
 Instantiating the dataset and dataloader...
 Checking the dataset and dataloader...
-person_images: torch.Size([30, 3, 128, 128])
-ca_images: torch.Size([30, 3, 128, 128])
-garment_images: torch.Size([30, 3, 128, 128])
-person_poses: torch.Size([30, 25, 2])
+person_images: torch.Size([16, 3, 128, 128])
+ca_images: torch.Size([16, 3, 128, 128])
+garment_images: torch.Size([16, 3, 128, 128])
+person_poses: torch.Size([16, 25, 2])
 Instantiating U-Nets...
 ((128, 128),)
 Instantiating the trainer...
@@ -19,9 +19,9 @@ Device: cuda
 
 Mixed precision type: no
 
-Loading model checkpoint from /scratch/network/dg9272/cos485/checkpoints/checks4/checkpoint.21600.pt
+Loading model checkpoint from /scratch/network/dg9272/cos485/checkpoints/checks5/checkpoint.1500.pt
 Loading optimizer and scaler...
-checkpoint loaded from /scratch/network/dg9272/cos485/checkpoints/checks4/checkpoint.21600.pt
+checkpoint loaded from /scratch/network/dg9272/cos485/checkpoints/checks5/checkpoint.1500.pt
 Starting training loop...
 wrapping unet 1 and preparing with accelerator
 Traceback (most recent call last):
@@ -57,8 +57,8 @@ Traceback (most recent call last):
     return self._call_impl(*args, **kwargs)
   File "/home/dg9272/.conda/envs/cos485/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
     return forward_call(*args, **kwargs)
-  File "/home/dg9272/tryondiffusion2.0/tryondiffusion/modules/conditional.py", line 72, in forward
-    h = self.ada_gn2(h, time_emb=time_emb)
+  File "/home/dg9272/tryondiffusion2.0/tryondiffusion/modules/conditional.py", line 67, in forward
+    x = self.ada_gn1(x, time_emb=time_emb)
   File "/home/dg9272/.conda/envs/cos485/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1511, in _wrapped_call_impl
     return self._call_impl(*args, **kwargs)
   File "/home/dg9272/.conda/envs/cos485/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
@@ -73,4 +73,4 @@ Traceback (most recent call last):
     return F.group_norm(
   File "/home/dg9272/.conda/envs/cos485/lib/python3.10/site-packages/torch/nn/functional.py", line 2561, in group_norm
     return torch.group_norm(input, num_groups, weight, bias, eps, torch.backends.cudnn.enabled)
-torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 120.00 MiB. GPU 0 has a total capacity of 79.33 GiB of which 91.69 MiB is free. Including non-PyTorch memory, this process has 79.23 GiB memory in use. Of the allocated memory 77.39 GiB is allocated by PyTorch, and 1.34 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 32.00 MiB. GPU 0 has a total capacity of 39.56 GiB of which 6.69 MiB is free. Including non-PyTorch memory, this process has 39.55 GiB memory in use. Of the allocated memory 38.59 GiB is allocated by PyTorch, and 470.70 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

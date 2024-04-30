@@ -12,11 +12,11 @@ from torchvision.utils import save_image
 import json
 
 TRAIN_UNET_NUMBER = 1
-BASE_UNET_IMAGE_SIZE = (96, 96) 
+BASE_UNET_IMAGE_SIZE = (128, 128) 
 # SR_UNET_IMAGE_SIZE = (64, 64)
 BATCH_SIZE = 1
-GRADIENT_ACCUMULATION_STEPS = 2
-NUM_ITERATIONS = 20000
+GRADIENT_ACCUMULATION_STEPS = 4
+NUM_ITERATIONS = 50000
 TIMESTEPS = (256)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -58,14 +58,12 @@ class SyntheticTryonDataset(Dataset):
         # print(person_pose)
         f.close()
         
-        garment_pose = torch.randn(*(1, 2))
 
         sample = {
             "person_images": person_image,
             "ca_images": ca_image,
             "garment_images": garment_image,
             "person_poses": person_pose,
-            "garment_poses": garment_pose,
         }
 
         return sample
@@ -77,7 +75,6 @@ def tryondiffusion_collate_fn(batch):
         "ca_images": torch.stack([item["ca_images"] for item in batch]),
         "garment_images": torch.stack([item["garment_images"] for item in batch]),
         "person_poses": torch.stack([item["person_poses"] for item in batch]),
-        "garment_poses": torch.stack([item["garment_poses"] for item in batch]),
     }
 
 
@@ -119,7 +116,7 @@ def main():
         accelerate_cpu=False,
         accelerate_gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
         device="cuda",
-        checkpoint_path="/scratch/network/dg9272/cos485/checkpoints/",
+        checkpoint_path="/scratch/network/dg9272/cos485/checkpoints/checks4",
         checkpoint_every=100,
         lr=1e-6
     )
@@ -128,9 +125,9 @@ def main():
     trainer.add_train_dataloader(train_dataloader)
     trainer.add_valid_dataloader(validation_dataloader)
     validation_sample = next(iter(validation_dataloader))
-    save_image(validation_sample['person_images'], 'person.jpg')
-    save_image(validation_sample['ca_images'], 'ca.jpg')
-    save_image(validation_sample['garment_images'], 'garment.jpg')
+    save_image(validation_sample['person_images'], 'out/person.jpg')
+    save_image(validation_sample['ca_images'], 'out/ca.jpg')
+    save_image(validation_sample['garment_images'], 'out/garment.jpg')
     del validation_sample['person_images']
     imagen_sample_kwargs = dict(
         **validation_sample,
@@ -149,7 +146,7 @@ def main():
 
     for unet_output in images:
         for image in unet_output:
-            image.save("10000.png") 
+            image.save("out/test.png") 
 
 
 if __name__ == "__main__":

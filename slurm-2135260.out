@@ -1,5 +1,0 @@
-/home/dg9272/.conda/envs/cos485/lib/python3.10/site-packages/accelerate/accelerator.py:436: FutureWarning: Passing the following arguments to `Accelerator` is deprecated and will be removed in version 1.0 of Accelerate: dict_keys(['split_batches']). Please pass an `accelerate.DataLoaderConfiguration` instead: 
-dataloader_config = DataLoaderConfiguration(split_batches=False)
-  warnings.warn(
-Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
-slurmstepd: error: *** JOB 2135260 ON adroit-h11g1 CANCELLED AT 2024-04-30T00:21:05 ***

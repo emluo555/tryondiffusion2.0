@@ -14,9 +14,9 @@ import json
 TRAIN_UNET_NUMBER = 1
 BASE_UNET_IMAGE_SIZE = (128, 128) 
 # SR_UNET_IMAGE_SIZE = (64, 64)
-BATCH_SIZE = 20
+BATCH_SIZE = 16
 GRADIENT_ACCUMULATION_STEPS = 4
-NUM_ITERATIONS = 50000
+NUM_ITERATIONS = 100000
 TIMESTEPS = (256)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -121,7 +121,7 @@ def main():
         accelerate_cpu=False,
         accelerate_gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
         device="cuda",
-        checkpoint_path="/scratch/network/dg9272/cos485/checkpoints/checks4",
+        checkpoint_path="/scratch/network/dg9272/cos485/checkpoints/checks5",
         checkpoint_every=100,
         lr=1e-6
     )
