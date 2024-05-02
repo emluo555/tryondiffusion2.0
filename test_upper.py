@@ -14,9 +14,9 @@ import json
 TRAIN_UNET_NUMBER = 1
 BASE_UNET_IMAGE_SIZE = (128, 128) 
 # SR_UNET_IMAGE_SIZE = (64, 64)
-BATCH_SIZE = 8
-GRADIENT_ACCUMULATION_STEPS = 16
-NUM_ITERATIONS = 1600000
+BATCH_SIZE = 1
+GRADIENT_ACCUMULATION_STEPS = 4
+NUM_ITERATIONS = 50000
 TIMESTEPS = (256)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -30,11 +30,11 @@ class SyntheticTryonDataset(Dataset):
             pose_size (tuple): The size of the pose tensors (default: (18, 2)).
         """
         self.data = []
-        for filename in os.listdir('/scratch/network/dg9272/cos485/VITON-HD/train/image/'):
-            f = os.path.join('/scratch/network/dg9272/cos485/VITON-HD/train/image/', filename)
+        for filename in os.listdir('/scratch/network/dg9272/cos485/upper/image'):
+            f = os.path.join('/scratch/network/dg9272/cos485/upper/image', filename)
             # checking if it is a file
             if os.path.isfile(f):
-                self.data.append(filename[:-4])
+                self.data.append(filename[:-6])
         self.num_samples = len(self.data)
         self.image_size = image_size
 
@@ -43,19 +43,18 @@ class SyntheticTryonDataset(Dataset):
 
     def __getitem__(self, idx):
         item = self.data[idx]
-        person_image = read_image(f"/scratch/network/dg9272/cos485/VITON-HD/train/image/{item}.jpg").float() / 255
+        person_image = read_image(f"/scratch/network/dg9272/cos485/upper/image/{item}_0.jpg").float() / 255
         person_image = v2.Resize(size=self.image_size)(person_image)
         
-        ca_image = read_image(f"/scratch/network/dg9272/cos485/VITON-HD/train/agnostic-v3.2/{item}.jpg").float() / 255 
+        ca_image = read_image(f"/scratch/network/dg9272/cos485/upper/agnostic/{item}_0.jpg").float() / 255
         ca_image = v2.Resize(size=self.image_size)(ca_image)
         
-        garment_image = read_image(f"/scratch/network/dg9272/cos485/VITON-HD/train/cloth/{item}.jpg").float() / 255
+        garment_image = read_image(f"/scratch/network/dg9272/cos485/upper/cloth/{item}_1.jpg").float() / 255
         garment_image = v2.Resize(size=self.image_size)(garment_image)
         
-        f = open(f"/scratch/network/dg9272/cos485/VITON-HD/train/openpose_json/{item}_keypoints.json")
-        data = json.load(f)['people'][0]['pose_keypoints_2d']
-        person_pose = torch.tensor([[ data[i * 3 + 1] / 1024, data[i * 3] / 768] for i in range(25)])
-        # print(person_pose)
+        f = open(f"/scratch/network/dg9272/cos485/upper/openpose_json/{item}_2.json")
+        points = json.load(f)['keypoints']
+        person_pose = torch.tensor([[ points[i * 2 + 1] * 2 / 1024, points[i * 2] * 2 / 768] for i in range(18)])
         f.close()
         
         # garment_pose = torch.randn(*(1, 2))
@@ -82,7 +81,6 @@ def tryondiffusion_collate_fn(batch):
 
 
 def main():
-    
     print("Instantiating the dataset and dataloader...")
     dataset = SyntheticTryonDataset(image_size=BASE_UNET_IMAGE_SIZE if TRAIN_UNET_NUMBER == 2 else BASE_UNET_IMAGE_SIZE
     )
@@ -95,7 +93,7 @@ def main():
     validation_dataloader = DataLoader(
         dataset,
         batch_size=BATCH_SIZE,
-        shuffle=False,
+        shuffle=True,
         collate_fn=tryondiffusion_collate_fn,
     )
     print("Checking the dataset and dataloader...")
@@ -113,7 +111,6 @@ def main():
         image_sizes=(BASE_UNET_IMAGE_SIZE, ),
         timesteps=TIMESTEPS,
     )
-
     print("Instantiating the trainer...")
     trainer = TryOnImagenTrainer(
         imagen=imagen,
@@ -121,25 +118,19 @@ def main():
         accelerate_cpu=False,
         accelerate_gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
         device="cuda",
-        checkpoint_path="/scratch/network/dg9272/cos485/checkpoints/checks6",
+        checkpoint_path="/scratch/network/dg9272/cos485/checkpoints/upper",
         checkpoint_every=100,
         lr=1e-6
     )
 
+    print("Starting sampling loop...")
     trainer.add_train_dataloader(train_dataloader)
     trainer.add_valid_dataloader(validation_dataloader)
-    print("Starting training loop...")
-    # training loop
-    for i in range(NUM_ITERATIONS):
-        # TRAINING
-        trainer.train_step(unet_number=TRAIN_UNET_NUMBER)
-        # if (i % NUM_ITERATIONS == 0):
-        #     trainer.valid_step(unet_number=TRAIN_UNET_NUMBER)
-
-    # SAMPLING
-    print("Starting sampling loop...")
-    validation_sample = next(trainer.valid_dl_iter)
-    _ = validation_sample.pop("person_images")
+    validation_sample = next(iter(validation_dataloader))
+    save_image(validation_sample['person_images'], 'out/person.jpg')
+    save_image(validation_sample['ca_images'], 'out/ca.jpg')
+    save_image(validation_sample['garment_images'], 'out/garment.jpg')
+    del validation_sample['person_images']
     imagen_sample_kwargs = dict(
         **validation_sample,
         batch_size=BATCH_SIZE,
@@ -150,13 +141,14 @@ def main():
         use_tqdm=True,
         use_one_unet_in_gpu=True,
     )
+
     images = trainer.sample(**imagen_sample_kwargs)  # returns List[Image]
     # assert len(images) == 2
     # assert len(images[0]) == BATCH_SIZE and len(images[1]) == BATCH_SIZE
 
     for unet_output in images:
         for image in unet_output:
-            image.save("output.png") 
+            image.save("out/test.jpg") 
 
 
 if __name__ == "__main__":

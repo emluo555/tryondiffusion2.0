@@ -11,7 +11,7 @@ from einops.layers.torch import Rearrange
 from torch import nn
 from torch.nn.parallel import DistributedDataParallel
 from tqdm.auto import tqdm
-person_pose_num = 25
+person_pose_num = 18
 garment_pose_num = 18
 from tryondiffusion.common.python_helpers import (
     cast_tuple,

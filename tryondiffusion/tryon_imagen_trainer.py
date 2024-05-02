@@ -109,15 +109,15 @@ class TryOnImagenTrainer(nn.Module):
         checkpoint_every=None,
         checkpoint_fs=None,
         fs_kwargs: dict = None,
-        max_checkpoints_keep=2,
+        max_checkpoints_keep=1,
         project_name: Optional[str] = None,
+        logname="logger.csv",
         **kwargs,
     ):
         super().__init__()
-        self.logger = open("logger5.csv", "a")
         self.loss = 0
         self.valid_loss = 0
-
+        self.logname = logname
         # save config
         init_args = locals()
         init_args.pop("self")
@@ -539,8 +539,10 @@ class TryOnImagenTrainer(nn.Module):
         if not self.can_checkpoint:
             return
         self.valid_step(unet_number=1)
-        self.logger.write(f"{self.loss},{self.valid_loss}\n")
-        self.logger.flush()
+        with open(self.logname, "a") as logger:
+            logger.write(f"{self.loss},{self.valid_loss}\n")
+            logger.flush()
+            logger.close()
         total_steps = int(self.steps.sum().item())
         filepath = os.path.join(self.checkpoint_path, f"checkpoint.{total_steps}.pt")
 

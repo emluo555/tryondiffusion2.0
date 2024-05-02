@@ -1,12 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=train     # create a short name for your job
+#SBATCH --job-name=test_lowerupper     # create a short name for your job
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
 #SBATCH --cpus-per-task=1        # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
-#SBATCH --constraint=gpu80
-#SBATCH --time=24:00:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=00:05:00          # total run time limit (HH:MM:SS)
 #SBATCH --mail-type=begin        # send email when job begins
 #SBATCH --mail-type=end          # send email when job ends
 #SBATCH --mail-type=fail         # send email if job fails
@@ -15,4 +14,4 @@
 module purge
 module load anaconda3/2024.2
 conda activate cos485
-python3 test.py
+python3 test_lowerupper.py
