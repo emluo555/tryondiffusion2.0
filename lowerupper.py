@@ -36,8 +36,8 @@ def tryondiffusion_collate_fn(batch):
 def main():
     
     print("Instantiating the dataset and dataloader...")
-    train_path = "/scratch/network/dg9272/dataset/lowerupper/train"
-    valid_path = "/scratch/network/dg9272/dataset/lowerupper/test"
+    train_path = "/scratch/network/dg9272/cos485/dataset/lowerupper/train"
+    valid_path = "/scratch/network/dg9272/cos485/dataset/lowerupper/test"
     train_dataset = DressCodeDataset(image_size=BASE_UNET_IMAGE_SIZE, path=train_path )
     valid_dataset = DressCodeDataset(image_size=BASE_UNET_IMAGE_SIZE, path=valid_path )
     train_dataloader = DataLoader(

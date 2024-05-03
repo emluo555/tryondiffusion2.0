@@ -11,63 +11,16 @@ from torchvision.transforms import v2
 from torchvision.utils import save_image
 import json
 
+from dataset import DressCodeDataset
+
 TRAIN_UNET_NUMBER = 1
 BASE_UNET_IMAGE_SIZE = (128, 128) 
 # SR_UNET_IMAGE_SIZE = (64, 64)
 BATCH_SIZE = 1
-GRADIENT_ACCUMULATION_STEPS = 4
-NUM_ITERATIONS = 50000
+GRADIENT_ACCUMULATION_STEPS = 32
+NUM_ITERATIONS = 1600000
 TIMESTEPS = (256)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-class SyntheticTryonDataset(Dataset):
-    def __init__(self, image_size, pose_size=(18, 2)):
-        """
-        Args:
-            num_samples (int): Number of samples in the dataset.
-            image_size (tuple): The height and width of the images (height, width).
-            pose_size (tuple): The size of the pose tensors (default: (18, 2)).
-        """
-        self.data = []
-        for filename in os.listdir('/scratch/network/dg9272/cos485/lowerupper/image'):
-            f = os.path.join('/scratch/network/dg9272/cos485/lowerupper/image', filename)
-            # checking if it is a file
-            if os.path.isfile(f):
-                self.data.append(filename[:-6])
-        self.num_samples = len(self.data)
-        self.image_size = image_size
-
-    def __len__(self):
-        return self.num_samples
-
-    def __getitem__(self, idx):
-        item = self.data[idx]
-        person_image = read_image(f"/scratch/network/dg9272/cos485/lowerupper/image/{item}_0.jpg").float() / 255
-        person_image = v2.Resize(size=self.image_size)(person_image)
-        
-        ca_image = read_image(f"/scratch/network/dg9272/cos485/lowerupper/agnostic/{item}_0.jpg").float() / 255
-        ca_image = v2.Resize(size=self.image_size)(ca_image)
-        
-        garment_image = read_image(f"/scratch/network/dg9272/cos485/lowerupper/cloth/{item}_1.jpg").float() / 255
-        garment_image = v2.Resize(size=self.image_size)(garment_image)
-        
-        f = open(f"/scratch/network/dg9272/cos485/lowerupper/openpose_json/{item}_2.json")
-        points = json.load(f)['keypoints']
-        person_pose = torch.tensor([[ points[i * 2 + 1] * 2 / 1024, points[i * 2] * 2 / 768] for i in range(18)])
-        f.close()
-        
-        # garment_pose = torch.randn(*(1, 2))
-
-        sample = {
-            "person_images": person_image,
-            "ca_images": ca_image,
-            "garment_images": garment_image,
-            "person_poses": person_pose,
-            # "garment_poses": garment_pose,
-        }
-
-        return sample
 
 
 def tryondiffusion_collate_fn(batch):
@@ -81,17 +34,20 @@ def tryondiffusion_collate_fn(batch):
 
 
 def main():
+    
     print("Instantiating the dataset and dataloader...")
-    dataset = SyntheticTryonDataset(image_size=BASE_UNET_IMAGE_SIZE if TRAIN_UNET_NUMBER == 2 else BASE_UNET_IMAGE_SIZE
-    )
+    train_path = "/scratch/network/dg9272/cos485/dataset/lowerupper/train"
+    valid_path = "/scratch/network/dg9272/cos485/dataset/lowerupper/test"
+    train_dataset = DressCodeDataset(image_size=BASE_UNET_IMAGE_SIZE, path=train_path )
+    valid_dataset = DressCodeDataset(image_size=BASE_UNET_IMAGE_SIZE, path=valid_path )
     train_dataloader = DataLoader(
-        dataset,
+        train_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
         collate_fn=tryondiffusion_collate_fn,
     )
     validation_dataloader = DataLoader(
-        dataset,
+        valid_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
         collate_fn=tryondiffusion_collate_fn,
@@ -120,7 +76,6 @@ def main():
         device="cuda",
         checkpoint_path="/scratch/network/dg9272/cos485/checkpoints/lowerupper",
         checkpoint_every=100,
-        lr=1e-6
     )
 
     print("Starting sampling loop...")
